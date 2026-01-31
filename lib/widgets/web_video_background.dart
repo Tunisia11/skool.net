@@ -1,6 +1,5 @@
-import 'dart:html' as html;
-import 'dart:ui_web' as ui_web;
 import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
 
 class WebVideoBackground extends StatefulWidget {
   final String videoPath;
@@ -17,8 +16,8 @@ class WebVideoBackground extends StatefulWidget {
 }
 
 class _WebVideoBackgroundState extends State<WebVideoBackground> {
-  late html.VideoElement _videoElement;
-  final String _viewId = 'video-background-${DateTime.now().millisecondsSinceEpoch}';
+  late VideoPlayerController _controller;
+  bool _initialized = false;
 
   @override
   void initState() {
@@ -26,35 +25,57 @@ class _WebVideoBackgroundState extends State<WebVideoBackground> {
     _initializeVideo();
   }
 
-  void _initializeVideo() {
-    _videoElement = html.VideoElement()
-      ..src = widget.videoPath
-      ..autoplay = true
-      ..muted = true
-      ..loop = true
-      ..style.width = '100%'
-      ..style.height = '100%'
-      ..style.objectFit = 'cover'
-      ..style.display = 'block' // Ensures it behaves as a block element
-      ..style.pointerEvents = 'none';
+  @override
+  void didUpdateWidget(WebVideoBackground oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.videoPath != widget.videoPath) {
+      _controller.dispose();
+      _initialized = false;
+      _initializeVideo();
+    }
+  }
 
-    // Register the view
-    // ignore: undefined_prefixed_name
-    ui_web.platformViewRegistry.registerViewFactory(
-      _viewId,
-      (int viewId) => _videoElement,
-    );
+  Future<void> _initializeVideo() async {
+    // For web, assets might need 'assets/' prefix if not handled automatically, 
+    // but VideoPlayerController.asset usually handles it.
+    _controller = VideoPlayerController.asset(widget.videoPath);
+    
+    try {
+      await _controller.initialize();
+      await _controller.setLooping(true);
+      await _controller.setVolume(0); // Mute is required for autoplay
+      await _controller.play();
+      if (mounted) {
+        setState(() {
+          _initialized = true;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error initializing video: $e');
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        Positioned.fill(
-          child: HtmlElementView(
-            viewType: _viewId,
+        if (_initialized)
+          Positioned.fill(
+            child: FittedBox(
+              fit: BoxFit.cover,
+              child: SizedBox(
+                width: _controller.value.size.width,
+                height: _controller.value.size.height,
+                child: VideoPlayer(_controller),
+              ),
+            ),
+          )
+        else
+          Positioned.fill(
+            child: Container(
+              color: Colors.black, // Fallback background
+            ),
           ),
-        ),
         Positioned.fill(
           child: widget.child,
         ),
@@ -64,8 +85,7 @@ class _WebVideoBackgroundState extends State<WebVideoBackground> {
 
   @override
   void dispose() {
-    _videoElement.pause();
-    _videoElement.remove();
+    _controller.dispose();
     super.dispose();
   }
 }
