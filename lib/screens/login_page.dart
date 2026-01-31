@@ -95,11 +95,18 @@ class _LoginPageState extends State<LoginPage> {
                   child: Container(color: Colors.black.withValues(alpha: 0.3)),
                 ),
                 Center(
-                  child: Image.asset(
-                    'assets/logo.png',
-                    width: 700,
-                    height: 700,
-                    fit: BoxFit.cover,
+                  child: Padding(
+                    padding: const EdgeInsets.all(0.0),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 800, maxHeight: 800),
+                      child: Transform.scale(
+                        scale: 1.5,
+                        child: Image.asset(
+                          'assets/logo.png',
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ],

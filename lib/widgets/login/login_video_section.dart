@@ -14,15 +14,14 @@ class LoginVideoSection extends StatelessWidget {
             child: Stack(
               children: [
                 Positioned.fill(
-                  child: Container(
-                    color: Colors.black.withValues(alpha: 0.3),
-                  ),
+                  child: Container(color: Colors.black.withValues(alpha: 0.3)),
                 ),
                 Center(
                   child: Image.asset(
                     'assets/logo.png',
-                    width: 700,
-                    height: 700,
+                    width: 800,
+                    height: 800,
+                    scale: 1.4,
                     fit: BoxFit.cover,
                   ),
                 ),

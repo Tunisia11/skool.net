@@ -57,7 +57,8 @@ class _WebVideoBackgroundState extends State<WebVideoBackground> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
+    return ClipRect(
+      child: Stack(
       children: [
         if (_initialized)
           Positioned.fill(
@@ -80,6 +81,7 @@ class _WebVideoBackgroundState extends State<WebVideoBackground> {
           child: widget.child,
         ),
       ],
+    ),
     );
   }
 
