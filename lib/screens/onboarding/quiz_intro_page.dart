@@ -15,8 +15,11 @@ class QuizIntroPage extends StatelessWidget {
       return Scaffold(
         body: Stack(
           children: [
-            // Dark Overlay
-            Container(color: Colors.black.withValues(alpha: 0.3)),
+            // Video Background
+            WebVideoBackground(
+              videoPath: 'assets/blonetalking.mp4',
+              child: Container(color: Colors.black.withValues(alpha: 0.3)),
+            ),
 
             // Logo
             Positioned(

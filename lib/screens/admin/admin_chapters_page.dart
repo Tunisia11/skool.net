@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:skool/constants/app_colors.dart';
 import 'package:skool/models/subject_model.dart';
 import 'package:skool/repositories/subject_repository.dart';
+import 'package:skool/widgets/admin/lesson_editor_dialog.dart';
 
 class AdminChaptersPage extends StatefulWidget {
   final SubjectModel subject;
@@ -336,77 +337,47 @@ class _AdminChaptersPageState extends State<AdminChaptersPage> {
   void _showAddLessonDialog(ChapterModel chapter) => _showLessonDialog(chapter, null);
   void _showEditLessonDialog(ChapterModel chapter, LessonModel lesson) => _showLessonDialog(chapter, lesson);
 
-  void _showLessonDialog(ChapterModel chapter, LessonModel? lesson) {
-    final titleController = TextEditingController(text: lesson?.title ?? '');
-    final videoUrlController = TextEditingController(text: lesson?.videoUrl ?? '');
-    final durationController = TextEditingController(text: lesson?.duration ?? '');
-
-    showDialog(
+  Future<void> _showLessonDialog(ChapterModel chapter, LessonModel? lesson) async {
+    final result = await showDialog<LessonModel>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(lesson == null ? 'إضافة درس' : 'تعديل الدرس', style: GoogleFonts.cairo(fontWeight: FontWeight.bold)),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: titleController,
-                decoration: InputDecoration(labelText: 'عنوان الدرس', labelStyle: GoogleFonts.cairo(), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: videoUrlController,
-                decoration: InputDecoration(labelText: 'رابط الفيديو', labelStyle: GoogleFonts.cairo(), hintText: 'https://...', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: durationController,
-                decoration: InputDecoration(labelText: 'المدة', labelStyle: GoogleFonts.cairo(), hintText: '15:30', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: Text('إلغاء', style: GoogleFonts.cairo(color: Colors.grey))),
-          ElevatedButton(
-            onPressed: () async {
-              if (titleController.text.isEmpty) return;
-              Navigator.pop(ctx);
-              try {
-                if (lesson == null) {
-                  final newLesson = LessonModel(
-                    id: '',
-                    title: titleController.text,
-                    videoUrl: videoUrlController.text,
-                    duration: durationController.text.isEmpty ? '0:00' : durationController.text,
-                    order: chapter.lessons.length,
-                  );
-                  await _repository.createLesson(widget.subject.id, chapter.id, newLesson);
-                } else {
-                  final updated = LessonModel(
-                    id: lesson.id,
-                    title: titleController.text,
-                    videoUrl: videoUrlController.text,
-                    duration: durationController.text.isEmpty ? '0:00' : durationController.text,
-                    order: lesson.order,
-                    isCompleted: lesson.isCompleted,
-                    resources: lesson.resources,
-                  );
-                  await _repository.updateLesson(widget.subject.id, chapter.id, updated);
-                }
-                _loadChapters();
-                _showSnackbar('تم الحفظ بنجاح', Colors.green);
-              } catch (e) {
-                _showSnackbar('خطأ: $e', Colors.red);
-              }
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: widget.subject.color),
-            child: Text(lesson == null ? 'إضافة' : 'حفظ', style: GoogleFonts.cairo(color: Colors.white)),
-          ),
-        ],
+      builder: (ctx) => LessonEditorDialog(
+        lesson: lesson,
+        accentColor: widget.subject.color,
       ),
     );
+
+    if (result != null) {
+      try {
+        if (lesson == null) {
+          // New lesson
+          final newLesson = LessonModel(
+            id: '',
+            title: result.title,
+            videoUrl: result.videoUrl,
+            duration: result.duration,
+            order: chapter.lessons.length,
+            resources: result.resources,
+          );
+          await _repository.createLesson(widget.subject.id, chapter.id, newLesson);
+        } else {
+          // Update lesson
+          final updated = LessonModel(
+            id: lesson.id,
+            title: result.title,
+            videoUrl: result.videoUrl,
+            duration: result.duration,
+            order: lesson.order,
+            isCompleted: lesson.isCompleted,
+            resources: result.resources,
+          );
+          await _repository.updateLesson(widget.subject.id, chapter.id, updated);
+        }
+        _loadChapters();
+        _showSnackbar('تم الحفظ بنجاح', Colors.green);
+      } catch (e) {
+        _showSnackbar('خطأ: $e', Colors.red);
+      }
+    }
   }
 
   void _confirmDeleteLesson(ChapterModel chapter, LessonModel lesson) {

@@ -16,9 +16,7 @@ class RegistrationSuccessPage extends StatelessWidget {
 
     final isHighSchool =
         grade != null && (grade!.contains('ثانوي') || grade!.contains('Bac'));
-    final isMale =
-        gender ==
-        'ذكر'; // Assuming 'ذكر' is the value for male based on Arabic context, or checking constants later.
+
     // Actually, safer to check if it matches the Male constant or similar.
     // Let's assume standard values from RegistrationConstants.
     // If we look at RegistrationPage, it compares with RegistrationConstants.genderMale.
@@ -73,7 +71,7 @@ class RegistrationSuccessPage extends StatelessWidget {
 
             // 2. Bottom Content Layer
             Align(
-              alignment: isMobile ? Alignment.center : Alignment.bottomLeft,
+              alignment: isMobile ? Alignment.bottomCenter : Alignment.bottomLeft,
               child: Padding(
                 padding: EdgeInsets.all(isMobile ? 20.0 : 32.0),
                 child: Column(

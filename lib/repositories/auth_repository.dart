@@ -75,7 +75,18 @@ class AuthRepository {
   Future<List<UserModel>> getAllUsers() async {
     try {
       final snapshot = await _firestore.collection('users').get();
-      return snapshot.docs.map((doc) => UserModel.fromJson(doc.data())).toList();
+      final List<UserModel> users = [];
+      
+      for (final doc in snapshot.docs) {
+        try {
+          users.add(UserModel.fromJson(doc.data()));
+        } catch (e) {
+          // Log error but continue with other users
+          print('Error parsing user ${doc.id}: $e');
+        }
+      }
+      
+      return users;
     } catch (e) {
       throw _handleAuthException(e);
     }

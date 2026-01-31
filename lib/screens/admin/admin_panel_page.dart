@@ -8,9 +8,11 @@ import 'package:skool/models/student_model.dart';
 import 'package:skool/models/teacher_model.dart';
 import 'package:skool/cubits/auth/auth_cubit.dart';
 import 'package:skool/cubits/auth/auth_state.dart';
-import 'package:skool/screens/landing_page.dart';
 import 'package:skool/screens/admin/user_details_page.dart';
 import 'package:skool/screens/admin/admin_subjects_page.dart';
+import 'package:skool/screens/admin/tabs/admin_reports_tab.dart';
+import 'package:skool/screens/admin/tabs/admin_settings_tab.dart';
+import 'package:skool/l10n/app_localizations.dart';
 
 
 class AdminPanelPage extends StatefulWidget {
@@ -38,12 +40,14 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
   Future<void> _fetchUsers() async {
     try {
       final users = await context.read<AuthRepository>().getAllUsers();
+      if (!mounted) return;
       setState(() {
         _users = users;
         _filteredUsers = users;
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString();
         _isLoading = false;
@@ -78,12 +82,13 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
     final size = MediaQuery.of(context).size;
     final isMobile = size.width < 800;
 
+
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FE),
       body: Row(
         children: [
           // Sidebar (hidden on mobile)
-          if (!isMobile) _buildSidebar(),
+          if (!isMobile) _buildSidebar(isMobile),
           
           // Main Content
           Expanded(
@@ -106,100 +111,75 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
         ],
       ),
       // Drawer for mobile
-      drawer: isMobile ? Drawer(child: _buildSidebar()) : null,
+      drawer: isMobile ? Drawer(child: _buildSidebar(isMobile)) : null,
     );
   }
 
-  Widget _buildSidebar() {
+  Widget _buildSidebar(bool isMobile) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
-      width: 260,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            AppColors.primary,
-            AppColors.primary.withValues(alpha: 0.85),
-          ],
-        ),
-      ),
+      width: isMobile ? double.infinity : 280,
+      color: Colors.white,
       child: Column(
         children: [
-          const SizedBox(height: 40),
-          // Logo/Brand
+          // Logo Area
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(24),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.school, color: Colors.white, size: 28),
+                  child: const Icon(Icons.school, color: AppColors.primary, size: 32),
                 ),
-                const SizedBox(width: 12),
-                Text(
-                  'Skool Admin',
-                  style: GoogleFonts.cairo(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    l10n.adminPanel,
+                    style: GoogleFonts.cairo(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 40),
           
-          // Navigation Items
-          _buildNavItem(0, Icons.dashboard_outlined, 'لوحة التحكم'),
-          _buildNavItem(1, Icons.people_outlined, 'المستخدمين'),
-          _buildNavItem(2, Icons.school_outlined, 'المواد الدراسية'),
-          _buildNavItem(3, Icons.bar_chart_outlined, 'التقارير'),
-          _buildNavItem(4, Icons.settings_outlined, 'الإعدادات'),
-          
-          const Spacer(),
-          
-          // Logout Button
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: InkWell(
-              onTap: () {
-                context.read<AuthCubit>().logout();
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const LandingPage()),
-                  (route) => false,
-                );
-              },
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.logout, color: Colors.white, size: 20),
-                    const SizedBox(width: 10),
-                    Text(
-                      'تسجيل الخروج',
-                      style: GoogleFonts.cairo(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              children: [
+                _buildNavItem(0, Icons.dashboard, l10n.dashboard),
+                _buildNavItem(1, Icons.people, l10n.users),
+                _buildNavItem(2, Icons.menu_book, l10n.subjects),
+                _buildNavItem(3, Icons.bar_chart, l10n.reports),
+                _buildNavItem(4, Icons.settings, l10n.settings),
+                
+                const Divider(height: 32),
+                
+                // Logout
+                ListTile(
+                  leading: const Icon(Icons.logout, color: Colors.red),
+                  title: Text(
+                    l10n.logout,
+                    style: GoogleFonts.cairo(
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
                     ),
-                  ],
+                  ),
+                  onTap: () {
+                    context.read<AuthCubit>().logout();
+                  },
                 ),
-              ),
+              ],
             ),
           ),
-          const SizedBox(height: 20),
         ],
       ),
     );
@@ -230,21 +210,21 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
           decoration: BoxDecoration(
-            color: isSelected ? Colors.white.withValues(alpha: 0.2) : Colors.transparent,
+            color: isSelected ? AppColors.primary.withValues(alpha: 0.1) : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
             children: [
               Icon(
                 icon,
-                color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.7),
+                color: isSelected ? AppColors.primary : AppColors.textSecondary,
                 size: 22,
               ),
               const SizedBox(width: 14),
               Text(
                 label,
                 style: GoogleFonts.cairo(
-                  color: isSelected ? Colors.white : Colors.white.withValues(alpha: 0.7),
+                  color: isSelected ? AppColors.primary : AppColors.textSecondary,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                   fontSize: 15,
                 ),
@@ -257,6 +237,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
   }
 
   Widget _buildTopBar(bool isMobile) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 32, vertical: 16),
       decoration: BoxDecoration(
@@ -280,7 +261,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
             ),
           
           Text(
-            'لوحة تحكم المسؤول',
+            l10n.adminPanel,
             style: GoogleFonts.cairo(
               fontSize: isMobile ? 18 : 24,
               fontWeight: FontWeight.bold,
@@ -297,7 +278,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
               setState(() => _isLoading = true);
               _fetchUsers();
             },
-            tooltip: 'تحديث',
+            tooltip: 'Refresh',
           ),
         ],
       ),
@@ -311,7 +292,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
         children: [
           Icon(Icons.error_outline, size: 64, color: Colors.red.withValues(alpha: 0.5)),
           const SizedBox(height: 16),
-          Text('حدث خطأ: $_error', style: GoogleFonts.cairo(color: Colors.red)),
+          Text('Error: $_error', style: GoogleFonts.cairo(color: Colors.red)),
           const SizedBox(height: 16),
           ElevatedButton.icon(
             onPressed: () {
@@ -319,7 +300,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
               _fetchUsers();
             },
             icon: const Icon(Icons.refresh),
-            label: Text('إعادة المحاولة', style: GoogleFonts.cairo()),
+            label: Text('Retry', style: GoogleFonts.cairo()),
           ),
         ],
       ),
@@ -327,6 +308,20 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
   }
 
   Widget _buildContent(bool isMobile) {
+    switch (_selectedNavIndex) {
+      case 3:
+        return AdminReportsTab(users: _users);
+      case 4:
+        return const AdminSettingsTab();
+      case 0:
+      case 1:
+      default:
+        return _buildDashboardContent(isMobile);
+    }
+  }
+
+  Widget _buildDashboardContent(bool isMobile) {
+    final l10n = AppLocalizations.of(context)!;
     return SingleChildScrollView(
       padding: EdgeInsets.all(isMobile ? 16 : 32),
       child: Column(
@@ -345,7 +340,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'قائمة المستخدمين',
+                l10n.userList,
                 style: GoogleFonts.cairo(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -353,7 +348,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                 ),
               ),
               Text(
-                '${_filteredUsers.length} مستخدم',
+                '${_filteredUsers.length}',
                 style: GoogleFonts.cairo(color: AppColors.textSecondary),
               ),
             ],
@@ -375,7 +370,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
                     Icon(Icons.search_off, size: 64, color: Colors.grey.withValues(alpha: 0.5)),
                     const SizedBox(height: 16),
                     Text(
-                      'لا يوجد مستخدمين مطابقين',
+                      l10n.noUsersFound,
                       style: GoogleFonts.cairo(color: AppColors.textSecondary),
                     ),
                   ],
@@ -388,6 +383,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
   }
 
   Widget _buildStatsRow(bool isMobile) {
+    final l10n = AppLocalizations.of(context)!;
     final studentCount = _users.whereType<StudentModel>().length;
     final teacherCount = _users.whereType<TeacherModel>().length;
     final adminCount = _users.where((u) => u.role == UserRole.admin).length;
@@ -397,17 +393,17 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
         children: [
           Row(
             children: [
-              _buildStatCard('إجمالي المستخدمين', _users.length.toString(), AppColors.primary, Icons.people),
+              _buildStatCard(l10n.totalUsers, _users.length.toString(), AppColors.primary, Icons.people),
               const SizedBox(width: 12),
-              _buildStatCard('الطلاب', studentCount.toString(), Colors.green, Icons.school),
+              _buildStatCard(l10n.students, studentCount.toString(), Colors.green, Icons.school),
             ],
           ),
           const SizedBox(height: 12),
           Row(
             children: [
-              _buildStatCard('المعلمين', teacherCount.toString(), Colors.orange, Icons.person),
+              _buildStatCard(l10n.teachers, teacherCount.toString(), Colors.orange, Icons.person),
               const SizedBox(width: 12),
-              _buildStatCard('المدراء', adminCount.toString(), Colors.purple, Icons.admin_panel_settings),
+              _buildStatCard(l10n.admins, adminCount.toString(), Colors.purple, Icons.admin_panel_settings),
             ],
           ),
         ],
@@ -416,13 +412,13 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
 
     return Row(
       children: [
-        _buildStatCard('إجمالي المستخدمين', _users.length.toString(), AppColors.primary, Icons.people),
+        _buildStatCard(l10n.totalUsers, _users.length.toString(), AppColors.primary, Icons.people),
         const SizedBox(width: 16),
-        _buildStatCard('الطلاب', studentCount.toString(), Colors.green, Icons.school),
+        _buildStatCard(l10n.students, studentCount.toString(), Colors.green, Icons.school),
         const SizedBox(width: 16),
-        _buildStatCard('المعلمين', teacherCount.toString(), Colors.orange, Icons.person),
+        _buildStatCard(l10n.teachers, teacherCount.toString(), Colors.orange, Icons.person),
         const SizedBox(width: 16),
-        _buildStatCard('المدراء', adminCount.toString(), Colors.purple, Icons.admin_panel_settings),
+        _buildStatCard(l10n.admins, adminCount.toString(), Colors.purple, Icons.admin_panel_settings),
       ],
     );
   }
@@ -486,6 +482,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
   }
 
   Widget _buildSearchAndFilter(bool isMobile) {
+    final l10n = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -507,7 +504,7 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
               _filterUsers();
             },
             decoration: InputDecoration(
-              hintText: 'البحث عن مستخدم...',
+              hintText: l10n.searchUser,
               hintStyle: GoogleFonts.cairo(color: Colors.grey),
               prefixIcon: const Icon(Icons.search, color: AppColors.primary),
               filled: true,
@@ -526,10 +523,10 @@ class _AdminPanelPageState extends State<AdminPanelPage> {
             spacing: 10,
             runSpacing: 10,
             children: [
-              _buildFilterChip('all', 'الكل', Icons.people),
-              _buildFilterChip('student', 'الطلاب', Icons.school),
-              _buildFilterChip('teacher', 'المعلمين', Icons.person),
-              _buildFilterChip('admin', 'المدراء', Icons.admin_panel_settings),
+              _buildFilterChip('all', l10n.all, Icons.people),
+              _buildFilterChip('student', l10n.students, Icons.school),
+              _buildFilterChip('teacher', l10n.teachers, Icons.person),
+              _buildFilterChip('admin', l10n.admins, Icons.admin_panel_settings),
             ],
           ),
         ],
