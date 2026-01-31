@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:skool/constants/app_colors.dart';
 import 'package:skool/models/user_model.dart';
@@ -29,6 +30,8 @@ class _CredentialsStepState extends State<CredentialsStep> {
   late TextEditingController _phoneController;
   late TextEditingController _passwordController;
   bool _obscurePassword = true;
+  String? _phoneError;
+  String? _emailError;
 
   @override
   void initState() {
@@ -44,6 +47,72 @@ class _CredentialsStepState extends State<CredentialsStep> {
     _phoneController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  /// Validates email format
+  String? _validateEmail(String value) {
+    if (value.isEmpty) {
+      return 'البريد الإلكتروني مطلوب';
+    }
+    final emailRegex = RegExp(
+      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+    );
+    if (!emailRegex.hasMatch(value)) {
+      return 'البريد الإلكتروني غير صالح';
+    }
+    return null;
+  }
+
+  void _onEmailChanged(String value) {
+    setState(() {
+      _emailError = _validateEmail(value);
+    });
+    widget.onEmailChanged(value);
+  }
+
+  /// Validates Tunisian phone number format
+  /// Valid formats: 8 digits starting with 2, 3, 4, 5, 7, or 9
+  String? _validateTunisianPhone(String value) {
+    if (value.isEmpty) {
+      return 'رقم الهاتف مطلوب';
+    }
+    
+    // Remove spaces and dashes
+    final cleanNumber = value.replaceAll(RegExp(r'[\s\-]'), '');
+    
+    // Check if it's 8 digits
+    if (cleanNumber.length != 8) {
+      return 'رقم الهاتف يجب أن يكون 8 أرقام';
+    }
+    
+    // Check if it starts with valid Tunisian prefixes
+    // 2x - Tunisie Telecom fixed
+    // 3x - Ooredoo mobile
+    // 4x - Ooredoo mobile  
+    // 5x - Ooredoo mobile
+    // 7x - Tunisie Telecom mobile
+    // 9x - Orange mobile
+    final validPrefixes = ['2', '3', '4', '5', '7', '9'];
+    if (!validPrefixes.contains(cleanNumber[0])) {
+      return 'رقم هاتف تونسي غير صالح';
+    }
+    
+    // Check if all characters are digits
+    if (!RegExp(r'^\d+$').hasMatch(cleanNumber)) {
+      return 'الرقم يجب أن يحتوي على أرقام فقط';
+    }
+    
+    return null;
+  }
+
+  void _onPhoneChanged(String value) {
+    setState(() {
+      _phoneError = _validateTunisianPhone(value);
+    });
+    
+    // Clean the number before saving (remove spaces/dashes)
+    final cleanNumber = value.replaceAll(RegExp(r'[\s\-]'), '');
+    widget.onPhoneNumberChanged(cleanNumber);
   }
 
   @override
@@ -71,32 +140,6 @@ class _CredentialsStepState extends State<CredentialsStep> {
           ),
           const SizedBox(height: 32),
 
-          // Role Selection
-          Text(
-            'نوع الحساب',
-            style: GoogleFonts.cairo(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(4),
-            decoration: BoxDecoration(
-              color: Colors.grey.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                _buildRoleOption('طالب', UserRole.student),
-                _buildRoleOption('أستاذ', UserRole.teacher),
-                _buildRoleOption('ولي أمر/إداري', UserRole.admin),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-
           // Email Field
           Text(
             'البريد الإلكتروني',
@@ -109,19 +152,34 @@ class _CredentialsStepState extends State<CredentialsStep> {
           const SizedBox(height: 8),
           TextField(
             controller: _emailController,
-            onChanged: widget.onEmailChanged,
+            onChanged: _onEmailChanged,
             keyboardType: TextInputType.emailAddress,
             decoration: InputDecoration(
               hintText: 'example@email.com',
               prefixIcon: const Icon(Icons.email_outlined),
+              errorText: _emailError,
+              errorStyle: GoogleFonts.cairo(fontSize: 12),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: _emailError != null ? Colors.red : Colors.grey.withValues(alpha: 0.3),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: _emailError != null ? Colors.red : AppColors.primary,
+                  width: 2,
+                ),
               ),
             ),
           ),
           const SizedBox(height: 24),
 
-          // Phone Number Field
+          // Phone Number Field with Tunisian validation
           Text(
             'رقم الهاتف',
             style: GoogleFonts.cairo(
@@ -133,13 +191,57 @@ class _CredentialsStepState extends State<CredentialsStep> {
           const SizedBox(height: 8),
           TextField(
             controller: _phoneController,
-            onChanged: widget.onPhoneNumberChanged,
+            onChanged: _onPhoneChanged,
             keyboardType: TextInputType.phone,
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'[\d\s\-]')),
+              LengthLimitingTextInputFormatter(11), // 8 digits + 3 spaces/dashes max
+            ],
             decoration: InputDecoration(
               hintText: '55 123 456',
-              prefixIcon: const Icon(Icons.phone_outlined),
+              hintStyle: GoogleFonts.cairo(color: Colors.grey),
+              prefixIcon: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.phone_outlined),
+                    const SizedBox(width: 8),
+                    Text(
+                      '+216',
+                      style: GoogleFonts.cairo(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    Container(
+                      height: 24,
+                      width: 1,
+                      margin: const EdgeInsets.only(left: 12),
+                      color: Colors.grey.withValues(alpha: 0.3),
+                    ),
+                  ],
+                ),
+              ),
+              prefixIconConstraints: const BoxConstraints(minWidth: 0),
+              errorText: _phoneError,
+              errorStyle: GoogleFonts.cairo(fontSize: 12),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: _phoneError != null ? Colors.red : Colors.grey.withValues(alpha: 0.3),
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: _phoneError != null ? Colors.red : AppColors.primary,
+                  width: 2,
+                ),
               ),
             ),
           ),
@@ -178,39 +280,6 @@ class _CredentialsStepState extends State<CredentialsStep> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildRoleOption(String label, UserRole role) {
-    final isSelected = widget.registrationData.role == role;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => widget.onRoleChanged(role),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: isSelected ? Colors.white : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 4,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.cairo(
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              color: isSelected ? AppColors.primary : AppColors.textSecondary,
-            ),
-          ),
-        ),
       ),
     );
   }

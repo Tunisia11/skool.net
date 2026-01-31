@@ -5,13 +5,21 @@ import 'package:skool/widgets/registration/shared/step_header.dart';
 
 class GenderSelectionStep extends StatelessWidget {
   final String? selectedGender;
+  final int? age;
   final Function(String) onGenderChanged;
 
   const GenderSelectionStep({
     super.key,
     required this.selectedGender,
     required this.onGenderChanged,
+    this.age,
   });
+
+  /// Determines if lycee avatars should be used (age 13+)
+  bool get _isLycee => age != null && age! >= 13;
+
+  String get _maleVideoPath => _isLycee ? 'assets/lycee_male.mp4' : 'assets/kid.mp4';
+  String get _femaleVideoPath => _isLycee ? 'assets/lycee_female.mp4' : 'assets/girl.mp4';
 
   @override
   Widget build(BuildContext context) {
@@ -29,21 +37,23 @@ class GenderSelectionStep extends StatelessWidget {
           children: [
             Expanded(
               child: GenderCard(
+                key: ValueKey('male_${_isLycee ? 'lycee' : 'primary'}'),
                 gender: RegistrationConstants.genderMale,
                 icon: Icons.male,
                 isSelected: selectedGender == RegistrationConstants.genderMale,
                 onTap: () => onGenderChanged(RegistrationConstants.genderMale),
-                videoPath: 'assets/kid.mp4',
+                videoPath: _maleVideoPath,
               ),
             ),
             const SizedBox(width: 20),
             Expanded(
               child: GenderCard(
+                key: ValueKey('female_${_isLycee ? 'lycee' : 'primary'}'),
                 gender: RegistrationConstants.genderFemale,
                 icon: Icons.female,
                 isSelected: selectedGender == RegistrationConstants.genderFemale,
                 onTap: () => onGenderChanged(RegistrationConstants.genderFemale),
-                videoPath: 'assets/girl.mp4',
+                videoPath: _femaleVideoPath,
               ),
             ),
           ],

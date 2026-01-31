@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:skool/constants/app_colors.dart';
+import 'package:skool/cubits/auth/auth_cubit.dart';
+import 'package:skool/screens/landing_page.dart';
 
 class QuizCompletionPage extends StatelessWidget {
   const QuizCompletionPage({super.key});
@@ -71,6 +74,32 @@ class QuizCompletionPage extends StatelessWidget {
                         ),
                       ),
                     ],
+                  ),
+                ),
+                const SizedBox(height: 32),
+                // Logout Button
+                ElevatedButton.icon(
+                  onPressed: () {
+                    context.read<AuthCubit>().logout();
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (_) => const LandingPage()),
+                      (route) => false,
+                    );
+                  },
+                  icon: const Icon(Icons.logout, color: AppColors.primary),
+                  label: Text(
+                    'تسجيل الخروج',
+                    style: GoogleFonts.cairo(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
                   ),
                 ),
               ],

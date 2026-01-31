@@ -138,6 +138,63 @@ class AuthRepository {
     }
   }
 
+  // ==================== ADMIN ACTIONS ====================
+
+  // Update user role
+  Future<void> updateUserRole(String userId, UserRole newRole) async {
+    try {
+      await _firestore.collection('users').doc(userId).update({
+        'role': newRole.toJson(),
+      });
+    } catch (e) {
+      throw _handleAuthException(e);
+    }
+  }
+
+  // Update user wallet balance
+  Future<void> updateUserBalance(String userId, double newBalance) async {
+    try {
+      await _firestore.collection('users').doc(userId).update({
+        'walletBalance': newBalance,
+      });
+    } catch (e) {
+      throw _handleAuthException(e);
+    }
+  }
+
+  // Ban/Suspend user
+  Future<void> banUser(String userId) async {
+    try {
+      await _firestore.collection('users').doc(userId).update({
+        'isBanned': true,
+        'bannedAt': DateTime.now().toIso8601String(),
+      });
+    } catch (e) {
+      throw _handleAuthException(e);
+    }
+  }
+
+  // Unban user
+  Future<void> unbanUser(String userId) async {
+    try {
+      await _firestore.collection('users').doc(userId).update({
+        'isBanned': false,
+        'bannedAt': null,
+      });
+    } catch (e) {
+      throw _handleAuthException(e);
+    }
+  }
+
+  // Delete user (Firestore document only - Firebase Auth deletion requires admin SDK)
+  Future<void> deleteUser(String userId) async {
+    try {
+      await _firestore.collection('users').doc(userId).delete();
+    } catch (e) {
+      throw _handleAuthException(e);
+    }
+  }
+
   // Helper to handle Firebase exceptions
   Exception _handleAuthException(dynamic e) {
     if (e is FirebaseAuthException) {

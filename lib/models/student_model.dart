@@ -13,6 +13,7 @@ class StudentModel extends UserModel {
   @override
   final double walletBalance;
   final int age;
+  final String? gender;
   
   // E-learning specific
   final List<String> enrolledSubjectIds;
@@ -33,6 +34,7 @@ class StudentModel extends UserModel {
     this.bacSection,
     required this.walletBalance,
     this.age = 0,
+    this.gender,
     this.enrolledSubjectIds = const [],
     this.completedLessonIds = const [],
     this.learningProfile,
@@ -53,6 +55,7 @@ class StudentModel extends UserModel {
       'createdAt': createdAt.toIso8601String(),
       'phoneNumber': phoneNumber,
       'avatarUrl': avatarUrl,
+      'gender': gender,
       'state': state,
       'grade': grade,
       'section': section,
@@ -74,6 +77,7 @@ class StudentModel extends UserModel {
       createdAt: DateTime.parse(json['createdAt'] as String),
       phoneNumber: json['phoneNumber'] as String?,
       avatarUrl: json['avatarUrl'] as String?,
+      gender: json['gender'] as String?,
       state: json['state'] as String? ?? 'تونس', // Default fallback
       grade: json['grade'] as String? ?? 'غير محدد',
       section: json['section'] as String?,
@@ -97,6 +101,7 @@ class StudentModel extends UserModel {
   @override
   List<Object?> get props => [
     ...super.props,
+    gender,
     state,
     grade,
     section,
@@ -110,6 +115,7 @@ class StudentModel extends UserModel {
 
   StudentModel copyWith({
     String? name,
+    String? gender,
     String? state,
     String? grade,
     String? section,
@@ -124,6 +130,7 @@ class StudentModel extends UserModel {
       role: role,
       createdAt: createdAt,
       name: name ?? this.name,
+      gender: gender ?? this.gender,
       state: state ?? this.state,
       grade: grade ?? this.grade,
       section: section ?? this.section,

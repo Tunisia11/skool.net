@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:skool/constants/app_colors.dart';
 
@@ -8,6 +9,9 @@ class CustomTextField extends StatelessWidget {
   final IconData icon;
   final String? Function(String?)? validator;
   final ValueChanged<String>? onChanged;
+  final TextInputType? keyboardType;
+  final List<TextInputFormatter>? inputFormatters;
+  final bool obscureText;
 
   const CustomTextField({
     super.key,
@@ -16,6 +20,9 @@ class CustomTextField extends StatelessWidget {
     required this.icon,
     this.validator,
     this.onChanged,
+    this.keyboardType,
+    this.inputFormatters,
+    this.obscureText = false,
   });
 
   @override
@@ -24,6 +31,9 @@ class CustomTextField extends StatelessWidget {
       controller: controller,
       validator: validator,
       onChanged: onChanged,
+      keyboardType: keyboardType,
+      inputFormatters: inputFormatters,
+      obscureText: obscureText,
       decoration: InputDecoration(
         labelText: label,
         labelStyle: GoogleFonts.cairo(),

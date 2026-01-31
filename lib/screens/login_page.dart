@@ -2,15 +2,13 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:skool/constants/app_colors.dart';
 import 'package:skool/cubits/auth/auth_cubit.dart';
 import 'package:skool/cubits/auth/auth_state.dart';
-import 'package:skool/screens/dashboard_page.dart';
-import 'package:skool/screens/registration_page.dart';
-import 'package:skool/screens/registration_page.dart';
-import 'package:skool/widgets/web_video_background.dart';
 import 'package:skool/widgets/auth_wrapper.dart';
+import 'package:skool/widgets/login/login_form_footer.dart';
+import 'package:skool/widgets/login/login_form_header.dart';
+import 'package:skool/widgets/web_video_background.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -36,19 +34,20 @@ class _LoginPageState extends State<LoginPage> {
     final password = _passwordController.text;
 
     if (email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'يرجى إدخال البريد الإلكتروني وكلمة المرور',
-            style: GoogleFonts.cairo(),
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showError('يرجى إدخال البريد الإلكتروني وكلمة المرور');
       return;
     }
 
     context.read<AuthCubit>().login(email: email, password: password);
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message, style: GoogleFonts.cairo()),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
 
   @override
@@ -64,12 +63,7 @@ class _LoginPageState extends State<LoginPage> {
             (route) => false,
           );
         } else if (state is AuthError) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(state.message, style: GoogleFonts.cairo()),
-              backgroundColor: Colors.red,
-            ),
-          );
+          _showError(state.message);
         }
       },
       child: Scaffold(
@@ -77,29 +71,14 @@ class _LoginPageState extends State<LoginPage> {
         body: isMobile
             ? Column(
                 children: [
-                  // Video Section - Compact on mobile
-                  SizedBox(
-                    height: 200,
-                    child: _buildVideoSection(),
-                  ),
-                  // Login Form Section
-                  Expanded(
-                    child: _buildFormSection(context, isMobile: true),
-                  ),
+                  SizedBox(height: 200, child: _buildVideoSection()),
+                  Expanded(child: _buildFormSection(isMobile: true)),
                 ],
               )
             : Row(
                 children: [
-                  // Left side - Login Form (50%)
-                  Expanded(
-                    flex: 1,
-                    child: _buildFormSection(context, isMobile: false),
-                  ),
-                  // Right side - Video Display (50%)
-                  Expanded(
-                    flex: 1,
-                    child: _buildVideoSection(),
-                  ),
+                  Expanded(child: _buildFormSection(isMobile: false)),
+                  Expanded(child: _buildVideoSection()),
                 ],
               ),
       ),
@@ -112,13 +91,9 @@ class _LoginPageState extends State<LoginPage> {
             videoPath: 'assets/bgvedio.mp4',
             child: Stack(
               children: [
-                // Dark overlay for better logo visibility
                 Positioned.fill(
-                  child: Container(
-                    color: Colors.black.withValues(alpha: 0.3),
-                  ),
+                  child: Container(color: Colors.black.withValues(alpha: 0.3)),
                 ),
-                // Logo on top
                 Center(
                   child: Image.asset(
                     'assets/logo.png',
@@ -143,7 +118,7 @@ class _LoginPageState extends State<LoginPage> {
           );
   }
 
-  Widget _buildFormSection(BuildContext context, {required bool isMobile}) {
+  Widget _buildFormSection({required bool isMobile}) {
     return Container(
       color: Colors.white,
       padding: EdgeInsets.symmetric(horizontal: isMobile ? 20 : 60),
@@ -155,53 +130,8 @@ class _LoginPageState extends State<LoginPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  'تسجيل الدخول',
-                  style: GoogleFonts.cairo(
-                    fontSize: isMobile ? 24 : 32,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                SizedBox(height: isMobile ? 8 : 10),
-                Text(
-                  'مرحبًا بك مجددًا! الرجاء إدخال بياناتك',
-                  style: GoogleFonts.cairo(
-                    fontSize: isMobile ? 14 : 16,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
+                LoginFormHeader(isMobile: isMobile),
                 SizedBox(height: isMobile ? 30 : 40),
-
-                // Social Login
-                _socialButton(
-                  context,
-                  icon: FontAwesomeIcons.google,
-                  text: 'المتابعة باستخدام Google',
-                  color: Colors.red,
-                  isMobile: isMobile,
-                ),
-
-                SizedBox(height: isMobile ? 20 : 30),
-                Row(
-                  children: [
-                    const Expanded(child: Divider()),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                      ),
-                      child: Text(
-                        'أو',
-                        style: GoogleFonts.cairo(
-                          fontSize: isMobile ? 13 : 14,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ),
-                    const Expanded(child: Divider()),
-                  ],
-                ),
-                SizedBox(height: isMobile ? 20 : 30),
 
                 // Email Field
                 TextField(
@@ -233,11 +163,7 @@ class _LoginPageState extends State<LoginPage> {
                       icon: Icon(
                         _obscurePassword ? Icons.visibility_off : Icons.visibility,
                       ),
-                      onPressed: () {
-                        setState(() {
-                          _obscurePassword = !_obscurePassword;
-                        });
-                      },
+                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                     ),
                   ),
                 ),
@@ -259,6 +185,7 @@ class _LoginPageState extends State<LoginPage> {
 
                 SizedBox(height: isMobile ? 20 : 30),
 
+                // Login Button
                 BlocBuilder<AuthCubit, AuthState>(
                   builder: (context, state) {
                     final isLoading = state is AuthLoading;
@@ -296,77 +223,10 @@ class _LoginPageState extends State<LoginPage> {
                 ),
 
                 SizedBox(height: isMobile ? 16 : 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'ليس لديك حساب؟',
-                      style: GoogleFonts.cairo(
-                        fontSize: isMobile ? 13 : 14,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const RegistrationPage(),
-                          ),
-                        );
-                      },
-                      child: Text(
-                        'سجل الآن',
-                        style: GoogleFonts.cairo(
-                          fontSize: isMobile ? 13 : 14,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                LoginFormFooter(isMobile: isMobile),
               ],
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _socialButton(
-    BuildContext context, {
-    required IconData icon,
-    required String text,
-    required Color color,
-    required bool isMobile,
-  }) {
-    return InkWell(
-      onTap: () {
-        // Mock social login or implement later
-      },
-      child: Container(
-        padding: EdgeInsets.symmetric(vertical: isMobile ? 12 : 14),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: color, size: 20),
-            const SizedBox(width: 12),
-            Flexible(
-              child: Text(
-                text,
-                style: GoogleFonts.cairo(
-                  fontSize: isMobile ? 14 : 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
         ),
       ),
     );

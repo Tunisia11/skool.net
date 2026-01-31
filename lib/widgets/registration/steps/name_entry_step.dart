@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:skool/constants/registration_constants.dart';
+import 'package:skool/widgets/registration/form_fields/age_selector.dart';
 import 'package:skool/widgets/registration/form_fields/custom_text_field.dart';
 import 'package:skool/widgets/registration/shared/step_header.dart';
 
@@ -21,32 +21,49 @@ class NameEntryStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const StepHeader(
-          title: RegistrationConstants.step2Title,
-          subtitle: RegistrationConstants.step2Subtitle,
-        ),
-        const SizedBox(height: 40),
+    // Parse initial age from controller or default to 10
+    final initialAge = int.tryParse(ageController.text) ?? 10;
 
-        // Name Field
-        CustomTextField(
-          controller: nameController,
-          label: RegistrationConstants.labelName,
-          icon: Icons.person_outline,
-          onChanged: onNameChanged,
-        ),
-        const SizedBox(height: 20),
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const StepHeader(
+            title: 'أدخل معلوماتك',
+            subtitle: 'من فضلك أدخل اسمك وعمرك',
+          ),
+          const SizedBox(height: 32),
 
-        // Age Field
-        CustomTextField(
-          controller: ageController,
-          label: RegistrationConstants.labelAge,
-          icon: Icons.cake_outlined,
-          onChanged: onAgeChanged,
-        ),
-      ],
+          // Name Field
+          CustomTextField(
+            controller: nameController,
+            label: 'الاسم الكامل',
+            icon: Icons.person_outline,
+            onChanged: onNameChanged,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'الاسم مطلوب';
+              }
+              if (value.length < 3) {
+                return 'الاسم يجب أن يكون 3 أحرف على الأقل';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 24),
+
+          // Age Selector
+          AgeSelector(
+            initialAge: initialAge,
+            minAge: 5,
+            maxAge: 60,
+            onAgeChanged: (age) {
+              ageController.text = age.toString();
+              onAgeChanged?.call(age.toString());
+            },
+          ),
+        ],
+      ),
     );
   }
 }

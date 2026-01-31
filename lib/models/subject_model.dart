@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ResourceModel {
   final String id;
   final String title;
-  final String type; // 'pdf', 'link', etc.
+  final String type; // 'pdf', 'link', 'video'
   final String url;
 
   ResourceModel({
@@ -12,6 +13,20 @@ class ResourceModel {
     required this.type,
     required this.url,
   });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'type': type,
+    'url': url,
+  };
+
+  factory ResourceModel.fromJson(Map<String, dynamic> json) => ResourceModel(
+    id: json['id'] ?? '',
+    title: json['title'] ?? '',
+    type: json['type'] ?? 'pdf',
+    url: json['url'] ?? '',
+  );
 }
 
 class LessonModel {
@@ -20,6 +35,7 @@ class LessonModel {
   final String duration;
   final String videoUrl;
   final bool isCompleted;
+  final int order;
   final List<ResourceModel> resources;
 
   LessonModel({
@@ -28,17 +44,38 @@ class LessonModel {
     required this.duration,
     required this.videoUrl,
     this.isCompleted = false,
+    this.order = 0,
     this.resources = const [],
   });
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'duration': duration,
+    'videoUrl': videoUrl,
+    'isCompleted': isCompleted,
+    'order': order,
+    'resources': resources.map((r) => r.toJson()).toList(),
+  };
+
+  factory LessonModel.fromJson(Map<String, dynamic> json) => LessonModel(
+    id: json['id'] ?? '',
+    title: json['title'] ?? '',
+    duration: json['duration'] ?? '0:00',
+    videoUrl: json['videoUrl'] ?? '',
+    isCompleted: json['isCompleted'] ?? false,
+    order: json['order'] ?? 0,
+    resources: (json['resources'] as List<dynamic>?)
+        ?.map((r) => ResourceModel.fromJson(r as Map<String, dynamic>))
+        .toList() ?? [],
+  );
 }
 
 class ChapterModel {
   final String id;
   final String title;
   final String description;
-  final int videoCount;
-  final int exerciseCount;
-  final double progress; // 0.0 to 1.0
+  final int order;
   final bool isLocked;
   final List<LessonModel> lessons;
 
@@ -46,38 +83,81 @@ class ChapterModel {
     required this.id,
     required this.title,
     required this.description,
-    required this.videoCount,
-    required this.exerciseCount,
-    required this.progress,
+    this.order = 0,
     this.isLocked = false,
-    required this.lessons,
+    this.lessons = const [],
   });
+
+  int get videoCount => lessons.length;
+  double get progress {
+    if (lessons.isEmpty) return 0.0;
+    final completed = lessons.where((l) => l.isCompleted).length;
+    return completed / lessons.length;
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'description': description,
+    'order': order,
+    'isLocked': isLocked,
+  };
+
+  factory ChapterModel.fromJson(Map<String, dynamic> json, {List<LessonModel>? lessons}) => ChapterModel(
+    id: json['id'] ?? '',
+    title: json['title'] ?? '',
+    description: json['description'] ?? '',
+    order: json['order'] ?? 0,
+    isLocked: json['isLocked'] ?? false,
+    lessons: lessons ?? [],
+  );
+
+  ChapterModel copyWith({List<LessonModel>? lessons}) => ChapterModel(
+    id: id,
+    title: title,
+    description: description,
+    order: order,
+    isLocked: isLocked,
+    lessons: lessons ?? this.lessons,
+  );
 }
 
 class SubjectModel {
   final String id;
   final String name;
-  final String icon; // Icon name or image path
-  final Color color;
-  final double progress; // 0.0 to 1.0
-  final int chapterCount;
-  final int videoCount;
+  final String icon;
+  final String colorHex;
   final List<String> targetGrades;
+  final String createdBy;
+  final DateTime createdAt;
   final List<ChapterModel> chapters;
 
   SubjectModel({
     required this.id,
     required this.name,
     required this.icon,
-    required this.color,
-    required this.progress,
-    required this.chapterCount,
-    required this.videoCount,
+    required this.colorHex,
     this.targetGrades = const [],
-    required this.chapters,
+    required this.createdBy,
+    required this.createdAt,
+    this.chapters = const [],
   });
 
-  // Get generic icon data based on string
+  Color get color {
+    try {
+      return Color(int.parse(colorHex.replaceFirst('#', '0xFF')));
+    } catch (e) {
+      return Colors.blue;
+    }
+  }
+
+  int get chapterCount => chapters.length;
+  int get videoCount => chapters.fold(0, (sum, c) => sum + c.videoCount);
+  double get progress {
+    if (chapters.isEmpty) return 0.0;
+    return chapters.fold(0.0, (sum, c) => sum + c.progress) / chapters.length;
+  }
+
   IconData get iconData {
     switch (icon.toLowerCase()) {
       case 'math':
@@ -108,183 +188,73 @@ class SubjectModel {
     }
   }
 
-  static List<SubjectModel> getFakeSubjects(String userGrade) {
-    // Generate resources
-    List<ResourceModel> generateResources() {
-      return [
-        ResourceModel(id: 'r1', title: 'ملخص الدرس PDF', type: 'pdf', url: '#'),
-        ResourceModel(id: 'r2', title: 'تمارين تطبيقية', type: 'pdf', url: '#'),
-      ];
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'icon': icon,
+    'colorHex': colorHex,
+    'targetGrades': targetGrades,
+    'createdBy': createdBy,
+    'createdAt': Timestamp.fromDate(createdAt),
+  };
+
+  factory SubjectModel.fromJson(Map<String, dynamic> json, {List<ChapterModel>? chapters}) {
+    DateTime createdAt;
+    if (json['createdAt'] is Timestamp) {
+      createdAt = (json['createdAt'] as Timestamp).toDate();
+    } else if (json['createdAt'] is String) {
+      createdAt = DateTime.parse(json['createdAt']);
+    } else {
+      createdAt = DateTime.now();
     }
 
-    // Generate lessons
-    List<LessonModel> generateLessons(String chapterTitle) {
-      return [
-        LessonModel(
-          id: 'l1',
-          title: 'الفيديو الأول: المفاهيم الأساسية',
-          duration: '15:20',
-          videoUrl: 'https://vjs.zencdn.net/v/oceans.mp4',
-          resources: generateResources(),
-        ),
-        LessonModel(
-          id: 'l2',
-          title: 'الفيديو الثاني: شرح معمق',
-          duration: '22:45',
-          videoUrl: 'https://vjs.zencdn.net/v/oceans.mp4',
-          resources: generateResources(),
-        ),
-        LessonModel(
-          id: 'l3',
-          title: 'الفيديو الثالث: تطبيقات عملية',
-          duration: '18:10',
-          videoUrl: 'https://vjs.zencdn.net/v/oceans.mp4',
-          resources: generateResources(),
-        ),
-      ];
-    }
-
-    // Generate some fake chapters
-    List<ChapterModel> generateChapters(String subjectName) {
-      return [
-        ChapterModel(
-          id: 'c1',
-          title: 'المقدمة والأساسيات',
-          description: 'نظرة عامة على أهم المفاهيم الأساسية والأدوات اللازمة لبدء الدراسة.',
-          videoCount: 5,
-          exerciseCount: 10,
-          progress: 1.0,
-          lessons: generateLessons('المقدمة والأساسيات'),
-        ),
-        ChapterModel(
-          id: 'c2',
-          title: 'المحور الأول: التعمق في المفاهيم',
-          description: 'شرح مفصل للمحور الأول مع أمثلة تطبيقية وتمارين شاملة.',
-          videoCount: 12,
-          exerciseCount: 15,
-          progress: 0.5,
-          lessons: generateLessons('المحور الأول'),
-        ),
-        ChapterModel(
-          id: 'c3',
-          title: 'المحور الثاني: النظرية والتطبيق',
-          description: 'الانتقال إلى الجانب العملي وكيفية حل المشكلات المعقدة.',
-          videoCount: 8,
-          exerciseCount: 12,
-          progress: 0.0,
-          lessons: generateLessons('المحور الثاني'),
-        ),
-        ChapterModel(
-          id: 'c4',
-          title: 'المحور الثالث: مراجعة شاملة',
-          description: 'ملخص لكل ما سبق مع اختبارات تجريبية استعداداً للامتحانات.',
-          videoCount: 10,
-          exerciseCount: 20,
-          progress: 0.0,
-          isLocked: true,
-          lessons: generateLessons('المحور الثالث'),
-        ),
-      ];
-    }
-
-    // Basic subjects for everyone
-    final List<SubjectModel> subjects = [
-      SubjectModel(
-        id: 's1',
-        name: 'الرياضيات',
-        icon: 'math',
-        color: Colors.blue,
-        progress: 0.65,
-        chapterCount: 12,
-        videoCount: 48,
-        targetGrades: [],
-        chapters: generateChapters('الرياضيات'),
-      ),
-      SubjectModel(
-        id: 's2',
-        name: 'الفيزياء',
-        icon: 'physics',
-        color: Colors.purple,
-        progress: 0.42,
-        chapterCount: 10,
-        videoCount: 35,
-        targetGrades: [],
-        chapters: generateChapters('الفيزياء'),
-      ),
-      SubjectModel(
-        id: 's3',
-        name: 'العلوم الطبيعية',
-        icon: 'biology',
-        color: Colors.green,
-        progress: 0.15,
-        chapterCount: 8,
-        videoCount: 28,
-        targetGrades: [],
-        chapters: generateChapters('العلوم الطبيعية'),
-      ),
-      SubjectModel(
-        id: 's4',
-        name: 'العربية',
-        icon: 'arabic',
-        color: Colors.orange,
-        progress: 0.80,
-        chapterCount: 15,
-        videoCount: 40,
-        targetGrades: [],
-        chapters: generateChapters('العربية'),
-      ),
-      SubjectModel(
-        id: 's5',
-        name: 'الفرنسية',
-        icon: 'french',
-        color: Colors.indigo,
-        progress: 0.30,
-        chapterCount: 9,
-        videoCount: 25,
-        targetGrades: [],
-        chapters: generateChapters('الفرنسية'),
-      ),
-      SubjectModel(
-        id: 's6',
-        name: 'الإنجليزية',
-        icon: 'english',
-        color: Colors.red,
-        progress: 0.55,
-        chapterCount: 11,
-        videoCount: 30,
-        targetGrades: [],
-        chapters: generateChapters('الإنجليزية'),
-      ),
-    ];
-
-    // Add specialized subjects for Bac
-    if (userGrade.contains('باكالوريا') || userGrade.contains('الثالثة ثانوي')) {
-      subjects.addAll([
-        SubjectModel(
-          id: 's7',
-          name: 'الفلسفة',
-          icon: 'philosophy',
-          color: Colors.brown,
-          progress: 0.10,
-          chapterCount: 6,
-          videoCount: 18,
-          targetGrades: ['باكالوريا'],
-          chapters: generateChapters('الفلسفة'),
-        ),
-        SubjectModel(
-          id: 's8',
-          name: 'الإعلامية',
-          icon: 'computer',
-          color: Colors.teal,
-          progress: 0.90,
-          chapterCount: 7,
-          videoCount: 20,
-          targetGrades: ['باكالوريا'],
-          chapters: generateChapters('الإعلامية'),
-        ),
-      ]);
-    }
-
-    return subjects;
+    return SubjectModel(
+      id: json['id'] ?? '',
+      name: json['name'] ?? '',
+      icon: json['icon'] ?? 'book',
+      colorHex: json['colorHex'] ?? '#2196F3',
+      targetGrades: List<String>.from(json['targetGrades'] ?? []),
+      createdBy: json['createdBy'] ?? '',
+      createdAt: createdAt,
+      chapters: chapters ?? [],
+    );
   }
+
+  SubjectModel copyWith({List<ChapterModel>? chapters}) => SubjectModel(
+    id: id,
+    name: name,
+    icon: icon,
+    colorHex: colorHex,
+    targetGrades: targetGrades,
+    createdBy: createdBy,
+    createdAt: createdAt,
+    chapters: chapters ?? this.chapters,
+  );
+
+  // Color options for subject creation
+  static List<Map<String, dynamic>> get colorOptions => [
+    {'name': 'أزرق', 'hex': '#2196F3'},
+    {'name': 'أخضر', 'hex': '#4CAF50'},
+    {'name': 'بنفسجي', 'hex': '#9C27B0'},
+    {'name': 'برتقالي', 'hex': '#FF9800'},
+    {'name': 'أحمر', 'hex': '#F44336'},
+    {'name': 'نيلي', 'hex': '#3F51B5'},
+    {'name': 'سماوي', 'hex': '#00BCD4'},
+    {'name': 'وردي', 'hex': '#E91E63'},
+  ];
+
+  // Icon options for subject creation
+  static List<Map<String, dynamic>> get iconOptions => [
+    {'name': 'رياضيات', 'value': 'math', 'icon': Icons.functions},
+    {'name': 'فيزياء', 'value': 'physics', 'icon': Icons.science},
+    {'name': 'كيمياء', 'value': 'chemistry', 'icon': Icons.biotech},
+    {'name': 'أحياء', 'value': 'biology', 'icon': Icons.eco},
+    {'name': 'عربية', 'value': 'arabic', 'icon': Icons.translate},
+    {'name': 'فرنسية', 'value': 'french', 'icon': Icons.language},
+    {'name': 'إنجليزية', 'value': 'english', 'icon': Icons.public},
+    {'name': 'تاريخ/جغرافيا', 'value': 'history', 'icon': Icons.map},
+    {'name': 'فلسفة', 'value': 'philosophy', 'icon': Icons.psychology},
+    {'name': 'إعلامية', 'value': 'computer', 'icon': Icons.computer},
+    {'name': 'أخرى', 'value': 'book', 'icon': Icons.book},
+  ];
 }

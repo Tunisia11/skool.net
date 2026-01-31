@@ -27,7 +27,7 @@ class RegistrationConstants {
     'تطاوين',
   ];
 
-  // Tunisian Education Grades
+  // Tunisian Education System (Primary, Prep, and Secondary)
   static const List<String> grades = [
     'السنة الأولى ابتدائي',
     'السنة الثانية ابتدائي',
@@ -40,27 +40,28 @@ class RegistrationConstants {
     'السنة التاسعة أساسي',
     'السنة الأولى ثانوي',
     'السنة الثانية ثانوي',
-    'الثالثة ثانوي (باكالوريا)',
+    'السنة الثالثة ثانوي',
+    'السنة الرابعة ثانوي (باكالوريا)',
   ];
 
   // Sections for middle/high school
   static const List<String> sections = [
-    'علوم',
     'آداب',
     'رياضيات',
+    'علوم تجريبية',
     'اقتصاد وتصرف',
-    'تقنية',
+    'علوم تقنية',
+    'علوم الإعلامية',
     'رياضة',
   ];
-
   // Bac sections
   static const List<String> bacSections = [
-    'علوم تجريبية',
-    'رياضيات',
-    'تقنية',
-    'علوم الإعلامية',
-    'اقتصاد وتصرف',
     'آداب',
+    'رياضيات',
+    'علوم تجريبية',
+    'اقتصاد وتصرف',
+    'علوم تقنية',
+    'علوم الإعلامية',
     'رياضة',
   ];
 
@@ -82,7 +83,8 @@ class RegistrationConstants {
   static const String errorAgeRequired = 'الرجاء إدخال العمر';
   static const String errorStateRequired = 'الرجاء اختيار الولاية';
   static const String errorGradeRequired = 'الرجاء اختيار المستوى الدراسي';
-  static const String errorBacSectionRequired = 'الرجاء اختيار شعبة الباكالوريا';
+  static const String errorBacSectionRequired =
+      'الرجاء اختيار شعبة الباكالوريا';
 
   // Step Titles
   static const String step1Title = 'اختر الجنس';

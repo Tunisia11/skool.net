@@ -29,10 +29,16 @@ class RegistrationData {
     this.role = UserRole.student, // Default to student
   });
 
-  bool get isBacGrade => grade == 'الثالثة ثانوي (باكالوريا)';
+  // السنة الأولى ثانوي is a common year with no sections
+  bool get isFirstYearSecondary => grade == 'السنة الأولى ثانوي';
   
+  bool get isBacGrade => grade == 'السنة الرابعة ثانوي (باكالوريا)';
+  
+  // Needs section for 2nd, 3rd year secondary (not 1st year which is common, not Bac)
   bool get needsSection => grade != null && 
-      (grade!.contains('أساسي') || grade!.contains('ثانوي'));
+      grade!.contains('ثانوي') &&
+      !isFirstYearSecondary &&
+      !isBacGrade;
 
   bool isGenderValid() => gender != null && gender!.isNotEmpty;
   bool isNameValid() => name != null && name!.isNotEmpty;
@@ -42,8 +48,22 @@ class RegistrationData {
   bool isBacSectionValid() => !isBacGrade || (bacSection != null && bacSection!.isNotEmpty);
   
   // New validators
-  bool isEmailValid() => email != null && email!.contains('@');
-  bool isPhoneNumberValid() => phoneNumber != null && phoneNumber!.length >= 8;
+  bool isEmailValid() {
+    if (email == null || email!.isEmpty) return false;
+    // Proper email regex validation
+    final emailRegex = RegExp(
+      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+    );
+    return emailRegex.hasMatch(email!);
+  }
+  bool isPhoneNumberValid() {
+    if (phoneNumber == null || phoneNumber!.isEmpty) return false;
+    final cleanNumber = phoneNumber!.replaceAll(RegExp(r'[\s\-]'), '');
+    if (cleanNumber.length != 8) return false;
+    final validPrefixes = ['2', '3', '4', '5', '7', '9'];
+    if (!validPrefixes.contains(cleanNumber[0])) return false;
+    return RegExp(r'^\d{8}$').hasMatch(cleanNumber);
+  }
   bool isPasswordValid() => password != null && password!.length >= 6;
 
   bool isStep1Valid() => isGenderValid();
