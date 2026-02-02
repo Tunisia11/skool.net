@@ -7,11 +7,7 @@ class LandingNavBar extends StatelessWidget {
   final VoidCallback? onLoginTap;
   final VoidCallback? onRegisterTap;
 
-  const LandingNavBar({
-    super.key,
-    this.onLoginTap,
-    this.onRegisterTap,
-  });
+  const LandingNavBar({super.key, this.onLoginTap, this.onRegisterTap});
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +36,7 @@ class LandingNavBar extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Image.asset('assets/logo.png', height: 40),
+          Image.asset('assets/logo.png', height: 10),
           Row(
             children: [
               TextButton(
@@ -108,15 +104,15 @@ class LandingNavBar extends StatelessWidget {
                 clipBehavior: Clip.none,
                 children: [
                   Positioned(
-                    top: 0,
-                    right: -130,
+                    top: -25,
+                    right: -80,
                     child: Container(
-                      width: 350,
-                      height: 90,
+                      width: 300,
+                      height: 100,
                       decoration: const BoxDecoration(
                         image: DecorationImage(
                           image: AssetImage('assets/logo.png'),
-                          fit: BoxFit.cover,
+                          fit: BoxFit.contain,
                         ),
                       ),
                     ),
